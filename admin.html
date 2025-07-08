@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FUTA Survey Admin Panel</title>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
+    <style>
+      :root {
+        --bg-dark: #0f0f1c;
+        --text-dark: #eee;
+        --bg-light: #fff;
+        --text-light: #111;
+        --accent: #1efcbe;
+      }
+      * {
+        box-sizing: border-box;
+        font-family: "Poppins", sans-serif;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: var(--bg-dark);
+        color: var(--text-dark);
+        padding: 20px;
+        transition: 0.3s;
+      }
+      body.light {
+        background: var(--bg-light);
+        color: var(--text-light);
+      }
+      h1 {
+        text-align: center;
+        margin-bottom: 20px;
+        color: var(--accent);
+      }
+      .controls {
+        text-align: center;
+        margin: 20px 0;
+      }
+      .btn {
+        background: var(--accent);
+        border: none;
+        padding: 10px 20px;
+        font-size: 1rem;
+        color: #000;
+        margin: 0 10px;
+        border-radius: 20px;
+        cursor: pointer;
+      }
+      .table-container {
+        overflow-x: auto;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+        font-size: 0.9rem;
+      }
+      th,
+      td {
+        padding: 10px;
+        border: 1px solid #666;
+        text-align: left;
+      }
+      th {
+        background: var(--accent);
+        color: #000;
+        position: sticky;
+        top: 0;
+      }
+      tbody tr:nth-child(even) {
+        background: rgba(255, 255, 255, 0.05);
+      }
+      body.light tbody tr:nth-child(even) {
+        background: #f1f1f1;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>📄 FUTA Substance Abuse Survey - Admin View</h1>
+
+    <div class="controls">
+      <button class="btn" onclick="toggleTheme()">🌗 Toggle Theme</button>
+      <button class="btn" onclick="downloadPDF()">📥 Download as PDF</button>
+    </div>
+
+    <div class="table-container" id="tableContainer">
+      <table id="dataTable">
+        <thead>
+          <tr id="tableHead">
+            <th>Loading...</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+
+    <script>
+      function toggleTheme() {
+        document.body.classList.toggle("light");
+      }
+
+      function downloadPDF() {
+        const element = document.getElementById("tableContainer");
+        const opt = {
+          margin: 0.2,
+          filename: "futa_survey_report.pdf",
+          image: { type: "jpeg", quality: 0.98 },
+          html2canvas: { scale: 2 },
+          jsPDF: { unit: "in", format: "a3", orientation: "landscape" },
+        };
+        html2pdf().from(element).set(opt).save();
+      }
+
+      // Firebase setup
+      firebase.initializeApp({
+        apiKey: "...",
+        authDomain: "...",
+        projectId: "gns-102",
+        appId: "...",
+      });
+      const db = firebase.firestore();
+
+      // Fetch and render data
+      async function loadData() {
+        const snapshot = await db.collection("users").get();
+        const allData = [];
+
+        snapshot.forEach((doc) => {
+          allData.push(doc.data());
+        });
+
+        if (allData.length === 0) {
+          document.getElementById("tableHead").innerHTML =
+            "<th>No data found</th>";
+          return;
+        }
+
+        // Build table headers dynamically
+        const keys = [...new Set(allData.flatMap((obj) => Object.keys(obj)))];
+        const headRow = document.getElementById("tableHead");
+        headRow.innerHTML = keys.map((key) => `<th>${key}</th>`).join("");
+
+        // Build table rows
+        const body = document.getElementById("tableBody");
+        allData.forEach((entry) => {
+          const row = document.createElement("tr");
+          row.innerHTML = keys
+            .map((k) => `<td>${formatCell(entry[k])}</td>`)
+            .join("");
+          body.appendChild(row);
+        });
+      }
+
+      function formatCell(value) {
+        if (Array.isArray(value)) return value.join(", ");
+        return value || "-";
+      }
+
+      loadData();
+    </script>
+  </body>
+</html>
