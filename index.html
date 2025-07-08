@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FUTA Substance Abuse Survey</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <style>
+      :root {
+        --bg-dark: #12121e;
+        --text-dark: #eee;
+        --card-dark: rgba(255, 255, 255, 0.05);
+        --bg-light: #ffffff;
+        --text-light: #222;
+        --card-light: #f9f9f9;
+        --accent: #1efcbe;
+      }
+      * {
+        box-sizing: border-box;
+        font-family: "Poppins", sans-serif;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: var(--bg-dark);
+        color: var(--text-dark);
+        transition: 0.3s;
+      }
+      body.light {
+        background: var(--bg-light);
+        color: var(--text-light);
+      }
+      header {
+        padding: 60px 20px;
+        text-align: center;
+        background: linear-gradient(90deg, #0f0c29, #302b63, #24243e);
+        color: var(--accent);
+      }
+      form {
+        padding: 40px 20px;
+        max-width: 900px;
+        margin: auto;
+      }
+      .card {
+        background: var(--card-dark);
+        backdrop-filter: blur(12px);
+        border-radius: 20px;
+        margin-bottom: 30px;
+        padding: 30px;
+        opacity: 0;
+        transform: translateY(40px);
+        transition: 0.6s ease-out;
+      }
+      body.light .card {
+        background: var(--card-light);
+      }
+      .card.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      h2 {
+        color: var(--accent);
+      }
+      label {
+        display: block;
+        margin-top: 20px;
+        font-weight: 500;
+      }
+      input,
+      select,
+      textarea {
+        width: 100%;
+        padding: 10px;
+        margin-top: 8px;
+        border-radius: 8px;
+        border: none;
+        background: #1f1f1f;
+        color: var(--text-dark);
+      }
+      body.light input,
+      body.light select,
+      body.light textarea {
+        background: #f0f0f0;
+        color: #222;
+      }
+      .checkbox-group {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 10px;
+      }
+      .checkbox-group label {
+        cursor: pointer;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 6px 10px;
+        border-radius: 8px;
+      }
+      button {
+        background: var(--accent);
+        color: #000;
+        padding: 14px 24px;
+        border: none;
+        border-radius: 12px;
+        font-size: 1.1rem;
+        cursor: pointer;
+        margin-top: 20px;
+        transition: 0.3s;
+      }
+      footer {
+        padding: 40px 20px;
+        text-align: center;
+        font-size: 0.9rem;
+      }
+      footer img {
+        /* border-radius: 50%; */
+        max-width: 1000px;
+        width: 100%;
+        /* height: 80px; */
+        margin: 10px;
+      }
+      .toggle-btn {
+        position: fixed;
+        top: -10px;
+        right: 6px;
+        z-index: 1000;
+        padding: 10px 16px;
+        background: var(--accent);
+        color: #000;
+        border: none;
+        border-radius: 20px;
+        cursor: pointer;
+      }
+      .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        visibility: hidden;
+        opacity: 0;
+        transition: 0.3s;
+      }
+      .modal.show {
+        visibility: visible;
+        opacity: 1;
+      }
+      .modal-content {
+        background: #222;
+        padding: 30px;
+        border-radius: 16px;
+        text-align: center;
+        color: #fff;
+      }
+      #substanceDetails{
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <button class="toggle-btn" onclick="toggleTheme()">🌗 Toggle Mode</button>
+    <header>
+      <h1>📊 Everyday Use, Unseen Abuse</h1>
+      <p>
+        Join us in transforming FUTA—your honest insights on substance use
+        matters.
+      </p>
+    </header>
+
+    <form id="surveyForm">
+      <!-- Demographics -->
+      <div class="card slide">
+        <h2>👤 Section A: Demographics</h2>
+        <label>Age Range</label>
+        <select name="ageRange" required>
+          <option value="">--Select--</option>
+          <option>13–16</option>
+          <option>17–19</option>
+          <option>20+</option>
+        </select>
+
+        <label>Gender</label>
+        <select name="gender" id="gender" required>
+          <option value="">--Select--</option>
+          <option>Male</option>
+          <option>Female</option>
+          <option>Prefer not to say</option>
+        </select>
+
+        <label>Level</label>
+        <select name="level" required>
+          <option value="">--Select--</option>
+          <option>100L</option>
+          <option>200L</option>
+          <option>300L</option>
+          <option>400L</option>
+          <option>500L</option>
+        </select>
+
+        <label>Hostel/Residence</label>
+        <select name="hostel" id="hostel" required>
+          <option value="">--Select--</option>
+          <option>Adeboye Male Hostel</option>
+          <option>Jibowu Female Hostel</option>
+          <option>Off-Campus</option>
+        </select>
+      </div>
+
+      <!-- Substances -->
+      <div class="card slide">
+        <h2>🧪 Section B: Substance Use</h2>
+        <label>Select substances you’ve used</label>
+        <div class="checkbox-group" id="substancesGroup">
+          <label
+            ><input type="checkbox" name="substances" value="Alcohol" />
+            Alcohol</label
+          >
+          <label
+            ><input type="checkbox" name="substances" value="Coffee" />
+            Coffee</label
+          >
+          <label
+            ><input type="checkbox" name="substances" value="Energy Drinks" />
+            Energy Drinks</label
+          >
+          <label
+            ><input type="checkbox" name="substances" value="Pain Killers" />
+            Pain Killers</label
+          >
+          <label
+            ><input type="checkbox" name="substances" value="Codeine Syrup" />
+            Codeine Syrup</label
+          >
+          <label
+            ><input type="checkbox" name="substances" value="Other" />
+            Other</label
+          >
+        </div>
+        <div id="substanceDetails"></div>
+      </div>
+
+      <!-- Perception -->
+      <div class="card slide">
+        <h2>🧠 Section C: Attitudes & Perception</h2>
+        <label>Do substances reduce stress?</label>
+        <select name="stressRelief" required>
+          <option>Strongly Agree</option>
+          <option>Agree</option>
+          <option>Neutral</option>
+          <option>Disagree</option>
+          <option>Strongly Disagree</option>
+        </select>
+
+        <label>Are you aware of the dangers?</label>
+        <select name="awareness" required>
+          <option>Yes</option>
+          <option>No</option>
+          <option>Not Sure</option>
+        </select>
+
+        <label>Would you seek help or stop?</label>
+        <select name="helpSeek" required>
+          <option>Yes, willing</option>
+          <option>Maybe</option>
+          <option>No, not interested</option>
+        </select>
+      </div>
+
+      <!-- Feedback -->
+      <div class="card slide">
+        <h2>💡 Section D: Feedback & Suggestions</h2>
+        <label>Your suggestions for FUTA</label>
+        <textarea name="suggestions"></textarea>
+
+        <label>Advice for fellow students?</label>
+        <textarea name="advice"></textarea>
+
+        <button type="submit">🚀 Submit Survey</button>
+      </div>
+    </form>
+
+    <!-- Modal -->
+    <div class="modal" id="thankModal">
+      <div class="modal-content">
+        <h2>🎉 Thank You!</h2>
+        <p>Your responses have been successfully submitted.</p>
+        <p>Need help or have questions?</p>
+        <a href="https://wa.me/message/DBFXVGDTMA53B1"
+          ><p>📞 +2347069449948</p></a
+        >
+        <button
+          onclick="document.getElementById('thankModal').classList.remove('show')"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+
+    <footer>
+      <div style="display: flex; justify-content: center; flex-direction: column; align-items: center;">
+        <div style="display: flex; flex-direction: column; justify-content: center; align-items: center;">
+          <img src="FB_IMG_17147705023686066.jpg" alt="Team Lead" />
+          <strong>Team Lead: Bamzy</strong>
+        </div>
+        <div style="display: flex; flex-direction: column; justify-content: center; align-items: center;">
+          <img src="IMG-20250708-WA0052.jpg" alt="Team Lead" />
+          <strong>Researcher: Wisdom</strong>  
+          
+        </div>
+      </div>
+      <p>
+        <strong>Other Researchers</strong>
+        <br> Adelola <br>
+        Imoleayo <br> 
+        <strong>Data Analyst:</strong> <br> Toluwani <br> Rebecca
+      </p>
+    </footer>
+
+    <script>
+      // Animate cards on scroll
+      const cards = document.querySelectorAll(".card");
+      const onScroll = () => {
+        const top = window.innerHeight * 0.85;
+        cards.forEach((c) => {
+          if (c.getBoundingClientRect().top < top) c.classList.add("visible");
+        });
+      };
+      window.addEventListener("scroll", onScroll);
+      onScroll();
+
+      // Firebase
+      firebase.initializeApp({
+        apiKey: "...",
+        authDomain: "...",
+        projectId: "gns-102",
+        appId: "...",
+      });
+      const db = firebase.firestore();
+
+      const form = document.getElementById("surveyForm");
+      const subsGroup = document.getElementById("substancesGroup");
+      const subDetails = document.getElementById("substanceDetails");
+      const genderSel = document.getElementById("gender");
+      const hostelSel = document.getElementById("hostel");
+
+      genderSel.onchange = () => {
+        const g = genderSel.value;
+        Array.from(hostelSel.options).forEach((opt) => {
+          opt.disabled =
+            g === "Male"
+              ? opt.text.includes("Female")
+              : g === "Female"
+              ? opt.text.includes("Male")
+              : false;
+        });
+        hostelSel.value = "";
+      };
+
+      subsGroup.onchange = () => {
+        subDetails.innerHTML = "";
+        document
+          .querySelectorAll('input[name="substances"]:checked')
+          .forEach((el) => {
+            const sub = el.value;
+            const s = sub.replace(/\s+/g, "_");
+            const div = document.createElement("div");
+            div.classList.add("card", "slide", "visible");
+            div.innerHTML = `
+          <h3>${sub}</h3>
+          ${
+            sub === "Other"
+              ? '<input type="text" name="custom_substance" placeholder="Specify other substance" class="other-input"/>'
+              : ""
+          }
+          <label>How often do you use ${sub}?</label>
+          <select name="frequency_${s}" required>
+            <option value="">--Select--</option>
+            <option>Daily</option>
+            <option>Weekly</option>
+            <option>Occasionally</option>
+            <option>Rarely</option>
+          </select>
+
+          <label>Why do you use ${sub}?</label>
+          <select name="reason_${s}" required>
+            <option>Stress relief</option>
+            <option>Peer pressure</option>
+            <option>Focus</option>
+            <option>Sleep</option>
+            <option>Curiosity</option>
+            <option>Other</option>
+          </select>
+
+          <label>Do you feel addicted to ${sub}?</label>
+          <select name="addiction_${s}" required>
+            <option>Yes</option>
+            <option>No</option>
+            <option>Not sure</option>
+          </select>
+
+          <label>How do you get ${sub}?</label>
+          <select name="source_${s}" required>
+            <option value="">--Select--</option>
+            <option>Friends</option>
+            <option>Online</option>
+            <option>Pharmacy</option>
+            <option>Street vendors</option>
+            <option>Other</option>
+          </select>
+        `;
+            subDetails.appendChild(div);
+          });
+      };
+
+      form.onsubmit = async (e) => {
+        e.preventDefault();
+        const fd = new FormData(form);
+        const data = {};
+        for (let [k, v] of fd.entries()) {
+          data[k] = data[k] ? [].concat(data[k], v) : v;
+        }
+        const id = "u_" + Date.now();
+        try {
+          await db.collection("users").doc(id).set(data);
+          document.getElementById("thankModal").classList.add("show");
+          form.reset();
+          subDetails.innerHTML = "";
+          window.scrollTo(0, 0);
+        } catch (err) {
+          alert("Error: " + err.message);
+        }
+      };
+
+      function toggleTheme() {
+        document.body.classList.toggle("light");
+      }
+    </script>
+  </body>
+</html>
